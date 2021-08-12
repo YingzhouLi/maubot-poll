@@ -1,0 +1,8 @@
+maubot: 0.1.0
+id: re.fffutu.poll
+version: 1.0.0
+license: MIT
+modules:
+  - polls
+main_class: PollPlugin
+database: true
