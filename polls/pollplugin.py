@@ -47,7 +47,7 @@ def _generate_result_text_message(
         question: str, choices: list, total_votes: int) -> str:
     message = f"Poll result: {question}\n"
     for choice in choices:
-        message = message + f"{choice.number[0]}. {choice.content}\n"
+        message = message + f"{choice.number[0]}. {choice.content}\n" \
                 f"({len(choice.votes)} in {total_votes} Votes - " \
                 f"{'{:.0%}'.format(len(choice.votes) / total_votes)})\n"
     return message

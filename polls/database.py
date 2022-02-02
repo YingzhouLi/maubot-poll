@@ -8,8 +8,8 @@ from .types import Poll
 
 
 def _generate_random_string() -> str:
-    return ''.join(random.SystemRandom().choice(string.ascii_uppercase \
-            + string.digits) for _ in range(6))
+    return ''.join(random.SystemRandom().choice(
+        string.ascii_uppercase + string.digits) for _ in range(6))
 
 
 class PollDatabase:
