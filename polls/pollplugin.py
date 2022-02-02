@@ -34,8 +34,9 @@ def _generate_poll_text_message(
     return message
 
 def _generate_result_html_message(
-        question: str, choices: list, total_votes: int) -> str:
-    message = f"<h4>Poll result: <em>{question}</em></h4><ol>"
+        question: str, choices: list, total_votes: int,
+        status: str) -> str:
+    message = f"<h4>Poll ({status}) result: <em>{question}</em></h4><ol>"
     for choice in choices:
         message = message + f"<li>{choice.content}" \
                 f"<br><em>{len(choice.votes)} in {total_votes} Votes - " \
@@ -44,10 +45,11 @@ def _generate_result_html_message(
     return message + "</ol>"
 
 def _generate_result_text_message(
-        question: str, choices: list, total_votes: int) -> str:
-    message = f"Poll result: {question}\n"
+        question: str, choices: list, total_votes: int,
+        status: str) -> str:
+    message = f"Poll ({status}) result: {question}\n"
     for choice in choices:
-        message = message + f"{choice.number[0]}. {choice.content}\n"
+        message = message + f"{choice.number[0]}. {choice.content}\n" \
                 f"({len(choice.votes)} in {total_votes} Votes - " \
                 f"{'{:.0%}'.format(len(choice.votes) / total_votes)})\n"
     return message
@@ -128,6 +130,38 @@ class PollPlugin(Plugin):
                             "`!poll create <Question> " \
                             "| <Option 1> | <Option 2> ...`")
 
+    @poll_command.subcommand(
+        name="close", aliases=["stop"],
+        help="Close a poll with the following command: " \
+                "`!poll close <code>`")
+    @command.argument(
+        name="code", label="code", pass_raw=False, required=True)
+    async def close(self, evt: MessageEvent, code: str):
+        poll = self.db.get_poll(evt.room_id, code)
+        if not poll.exists:
+            await self._send_temporary_response(
+                "This poll does not exist!", evt)
+            return
+
+        if poll.creator.strip() != evt.sender.strip():
+            await self._send_temporary_response(
+                "Only the creator of the poll can close it!", evt)
+            return
+        
+        if not poll.still_open:
+            await self._send_temporary_response(
+                f"Poll {poll.code} is already closed.", evt)
+            return
+
+        try:
+            self.db.close_poll(poll.id)
+            await self._send_temporary_response(
+                    f"Poll {poll.code} is now closed.", evt)
+        except:
+            await self._send_temporary_response(
+                    "Poll close failed, please try again.", evt)
+
+
     @command.new(name="vote", help="Take a poll..")
     @command.argument(
             name="code", label="Code", pass_raw=False, required=True)
@@ -136,6 +170,11 @@ class PollPlugin(Plugin):
     async def vote_poll(self, evt: MessageEvent, code: str, choice: str):
         poll = self.db.get_poll(evt.room_id, code)
         if poll.exists:
+            if not poll.still_open:
+                await self._send_temporary_response(
+                    "This poll is already closed!", evt)
+                return
+                
             choices = self.db.get_poll_choices_ids(poll.id)
             try:
                 choice_id = choices[int(choice)]
@@ -174,11 +213,13 @@ class PollPlugin(Plugin):
         total_votes = data[0]
         choices = data[1]
 
+        status = "open" if poll.still_open else "closed"
+        
         await self.client.send_text(evt.room_id,
                 _generate_result_text_message(poll.question,
-                    choices, total_votes),
+                    choices, total_votes, status),
                 _generate_result_html_message(poll.question,
-                    choices, total_votes))
+                    choices, total_votes, status))
 
     @poll_command.subcommand(
             name="ping", help="Pings the participants of a poll " \

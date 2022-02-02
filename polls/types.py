@@ -17,9 +17,13 @@ class Poll:
     id: int
     question: str
     creator: str
+    still_open: bool
 
-    def __init__(self, poll_id: int, question: str, creator: str):
+    def __init__(self, poll_id: int, question: str, creator: str, 
+                 still_open: bool):
         self.exists = poll_id is not None
         self.id = poll_id
         self.question = question
         self.creator = creator
+        self.still_open = still_open
+        
