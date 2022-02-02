@@ -36,7 +36,7 @@ def _generate_poll_text_message(
 def _generate_result_html_message(
         question: str, choices: list, total_votes: int,
         status: str) -> str:
-    message = f"<h4>Poll ({status})result: <em>{question}</em></h4><ol>"
+    message = f"<h4>Poll ({status}) result: <em>{question}</em></h4><ol>"
     for choice in choices:
         message = message + f"<li>{choice.content}" \
                 f"<br><em>{len(choice.votes)} in {total_votes} Votes - " \
@@ -213,7 +213,7 @@ class PollPlugin(Plugin):
         total_votes = data[0]
         choices = data[1]
 
-        status = "open" if poll.status == "open" else "closed"
+        status = "open" if poll.still_open else "closed"
         
         await self.client.send_text(evt.room_id,
                 _generate_result_text_message(poll.question,
