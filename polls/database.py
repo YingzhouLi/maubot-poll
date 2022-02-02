@@ -1,7 +1,7 @@
 import random
 import string
 
-from sqlalchemy import Table, MetaData, Column, Integer, String, Text
+from sqlalchemy import Table, MetaData, Column, Integer, String, Text, Boolean
 from sqlalchemy.engine import Engine
 
 from .types import Poll
@@ -29,7 +29,8 @@ class PollDatabase:
                          Column("code", String(6), nullable=False),
                          Column("creator", String(255), nullable=False),
                          Column("room_id", String(255), nullable=False),
-                         Column("question", Text, nullable=False))
+                         Column("question", Text, nullable=False),
+                         Column("still_open", Boolean, nullable=False))
 
         self.choices = Table("choices", meta,
                            Column("id", Integer, primary_key=True,
@@ -52,7 +53,7 @@ class PollDatabase:
         code = _generate_random_string()
         proxy = self.db.execute(
             self.polls.insert().values(code=code, creator=creator,
-                question=question, room_id=room_id)
+                question=question, room_id=room_id, still_open=True)
             )
         for index, choice in enumerate(choices):
             self.db.execute(
@@ -61,14 +62,19 @@ class PollDatabase:
                     choice_number=index + 1, content=choice))
         return code
 
+    def close_poll(self, poll_id: int):
+        return self.db.execute(self.polls.update().where(
+            self.polls.c.id == poll_id
+        ).values(still_open=False))
+
     def get_poll(self, room_id: str, code: str):
         poll = self.db.execute(
             self.polls.select().where(
                 self.polls.c.room_id == room_id).where(
                     self.polls.c.code == code)).fetchone()
         if poll is None:
-            return Poll(None, None, None)
-        return Poll(poll.id, poll.question, poll.creator)
+            return Poll(None, None, None, None)
+        return Poll(poll.id, poll.question, poll.creator, poll.still_open)
 
     def get_poll_choices_ids(self, poll_id: int):
         proxy = self.db.execute(self.choices.select().where(
