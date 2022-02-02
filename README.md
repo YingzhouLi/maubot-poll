@@ -8,6 +8,7 @@ Simply drag the plugin into the plugin folder, or upload it via maubot's user in
 ## Usage
 
 - `!poll create <question> | <option 1> | <option 2> | <...>` -  Creates a new poll
+- `!poll close <code>` - Close an open poll
 - `!vote <code> <option>` - Vote for an option
 - `!poll result <code>` - Shows the result of the poll
 - `!poll ping <code> <option>` - Pings all participants who voted for `option`
